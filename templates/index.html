@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Study Buddy</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 30px; background: #f3f3f3; }
+        h1 { color: #333; }
+        textarea { width: 100%; height: 100px; font-size: 16px; margin-bottom: 10px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        .response { margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .label { font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>AI Study Buddy</h1>
+    <textarea id="question" placeholder="Ask a study question..."></textarea><br>
+    <button onclick="askQuestion()">Ask</button>
+    <div class="response" id="responseBox" style="display:none;">
+        <div class="label">You:</div>
+        <div id="yourQuestion"></div>
+        <div class="label">AI:</div>
+        <div id="aiAnswer"></div>
+    </div>
+
+    <script>
+        function askQuestion() {
+            const question = document.getElementById("question").value;
+            if (!question) return;
+
+            fetch("/ask", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ question: question })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("yourQuestion").innerText = question;
+                document.getElementById("aiAnswer").innerText = data.answer;
+                document.getElementById("responseBox").style.display = "block";
+            })
+            .catch(error => {
+                document.getElementById("aiAnswer").innerText = "An error occurred. Check the server.";
+                document.getElementById("responseBox").style.display = "block";
+                console.error("Error:", error);
+            });
+        }
+    </script>
+    <!-- Whisper Transcription Form -->
+<h2>Transcribe Audio</h2>
+<form id="transcription-form" enctype="multipart/form-data">
+    <input type="file" name="audio" accept="audio/*" required>
+    <button type="submit">Transcribe</button>
+</form>
+<pre id="transcription-result" style="white-space: pre-wrap; margin-top: 1em;"></pre>
+
+<script>
+document.getElementById("transcription-form").addEventListener("submit", async function(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    const response = await fetch("/transcribe", {
+        method: "POST",
+        body: formData
+    });
+
+    const result = await response.json();
+    document.getElementById("transcription-result").innerText = result.transcription || result.error;
+});
+</script>
+</body>
+</html>

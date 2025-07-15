@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Study Buddy</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f4f4f4; }
+        h1 { color: #333; }
+        textarea, input, button { padding: 10px; margin-top: 10px; width: 100%; }
+        #chatbox { margin-top: 20px; background: #fff; padding: 20px; border-radius: 8px; min-height: 200px; }
+        .user { font-weight: bold; margin-top: 10px; }
+        .bot { color: green; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>AI Study Buddy</h1>
+    <textarea id="question" rows="3" placeholder="Ask a study question..."></textarea>
+    <button onclick="askQuestion()">Ask</button>
+    <div id="chatbox"></div>
+
+    <script>
+        async function askQuestion() {
+            const questionInput = document.getElementById('question');
+            const chatbox = document.getElementById('chatbox');
+            const question = questionInput.value.trim();
+
+            if (!question) return;
+
+            // Show user question
+            chatbox.innerHTML += `<div class='user'>You: ${question}</div>`;
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: question })
+                });
+
+                const data = await response.json();
+
+                // Show AI response
+                chatbox.innerHTML += `<div class='bot'>AI: ${data.answer}</div>`;
+            } catch (err) {
+                chatbox.innerHTML += `<div class='bot'>Error: Could not reach server.</div>`;
+            }
+
+            // Clear input
+            questionInput.value = "";
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+    </script>
+</body>
+</html>
