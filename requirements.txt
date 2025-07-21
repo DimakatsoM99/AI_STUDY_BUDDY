@@ -3,4 +3,5 @@ flask-cors
 python-dotenv
 cohere
 torch
-git+https://github.com/openai/whisper.git
+faster-whisper
+numpy
