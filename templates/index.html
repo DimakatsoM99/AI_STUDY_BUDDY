@@ -2,74 +2,158 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Study Buddy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 30px; background: #f3f3f3; }
-        h1 { color: #333; }
-        textarea { width: 100%; height: 100px; font-size: 16px; margin-bottom: 10px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-        .response { margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .label { font-weight: bold; margin-top: 10px; }
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-in {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+        .header-gradient {
+            background: linear-gradient(135deg, #3B82F6, #60A5FA);
+        }
+        .btn-primary {
+            transition: transform 0.2s, background-color 0.3s, box-shadow 0.3s;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+            background-color: #14B8A6;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .spinner {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3B82F6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
-<body>
-    <h1>AI Study Buddy</h1>
-    <textarea id="question" placeholder="Ask a study question..."></textarea><br>
-    <button onclick="askQuestion()">Ask</button>
-    <div class="response" id="responseBox" style="display:none;">
-        <div class="label">You:</div>
-        <div id="yourQuestion"></div>
-        <div class="label">AI:</div>
-        <div id="aiAnswer"></div>
+<body class="bg-gray-100 font-sans">
+    <div class="min-h-screen flex flex-col">
+        <header class="header-gradient text-white p-6 shadow-lg">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-3xl font-bold">AI Study Buddy</h1>
+                <p class="text-sm">Your smart learning companion</p>
+            </div>
+        </header>
+        <main class="container mx-auto p-6 flex-grow">
+            <div class="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-6 animate-slide-in">
+                <section class="mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Ask a Question</h2>
+                    <div class="flex flex-col gap-4">
+                        <textarea id="question-input" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="Type your question here..."></textarea>
+                        <button id="ask-btn" class="btn-primary bg-blue-500 text-white px-6 py-2 rounded-lg font-medium relative">
+                            Get Answer
+                            <div id="ask-spinner" class="spinner absolute right-4 top-1/2 -translate-y-1/2"></div>
+                        </button>
+                    </div>
+                    <div id="answer-output" class="mt-4 p-4 bg-gray-50 rounded-lg border-l-4 border-teal-500 hidden">
+                        <p class="text-gray-700"></p>
+                    </div>
+                </section>
+                <section>
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Transcribe Audio</h2>
+                    <div class="flex flex-col gap-4">
+                        <input type="file" id="audio-input" accept="audio/*" class="p-3 border rounded-lg">
+                        <button id="transcribe-btn" class="btn-primary bg-blue-500 text-white px-6 py-2 rounded-lg font-medium relative">
+                            Transcribe
+                            <div id="transcribe-spinner" class="spinner absolute right-4 top-1/2 -translate-y-1/2"></div>
+                        </button>
+                    </div>
+                    <div id="transcription-output" class="mt-4 p-4 bg-gray-50 rounded-lg border-l-4 border-teal-500 hidden">
+                        <p class="text-gray-700"></p>
+                    </div>
+                </section>
+            </div>
+        </main>
+        <footer class="bg-gray-800 text-white p-4 text-center">
+            <p>&copy; 2025 AI Study Buddy. All rights reserved.</p>
+        </footer>
     </div>
-
     <script>
-        function askQuestion() {
-            const question = document.getElementById("question").value;
-            if (!question) return;
+        const showSpinner = (spinnerId, button) => {
+            document.getElementById(spinnerId).style.display = 'block';
+            button.disabled = true;
+        };
+        const hideSpinner = (spinnerId, button) => {
+            document.getElementById(spinnerId).style.display = 'none';
+            button.disabled = false;
+        };
 
-            fetch("/ask", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ question: question })
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("yourQuestion").innerText = question;
-                document.getElementById("aiAnswer").innerText = data.answer;
-                document.getElementById("responseBox").style.display = "block";
-            })
-            .catch(error => {
-                document.getElementById("aiAnswer").innerText = "An error occurred. Check the server.";
-                document.getElementById("responseBox").style.display = "block";
-                console.error("Error:", error);
-            });
-        }
+        document.getElementById('ask-btn').addEventListener('click', async () => {
+            const questionInput = document.getElementById('question-input');
+            const answerOutput = document.getElementById('answer-output');
+            const answerText = answerOutput.querySelector('p');
+            const askButton = document.getElementById('ask-btn');
+            const question = questionInput.value.trim();
+
+            if (!question) {
+                answerText.textContent = 'Please enter a question.';
+                answerOutput.classList.remove('hidden');
+                return;
+            }
+
+            showSpinner('ask-spinner', askButton);
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+                const data = await response.json();
+                answerText.textContent = data.answer || 'No response received.';
+                answerOutput.classList.remove('hidden');
+            } catch (error) {
+                answerText.textContent = 'Error fetching answer. Please try again.';
+                answerOutput.classList.remove('hidden');
+            } finally {
+                hideSpinner('ask-spinner', askButton);
+            }
+        });
+
+        document.getElementById('transcribe-btn').addEventListener('click', async () => {
+            const audioInput = document.getElementById('audio-input');
+            const transcriptionOutput = document.getElementById('transcription-output');
+            const transcriptionText = transcriptionOutput.querySelector('p');
+            const transcribeButton = document.getElementById('transcribe-btn');
+
+            if (!audioInput.files.length) {
+                transcriptionText.textContent = 'Please select an audio file.';
+                transcriptionOutput.classList.remove('hidden');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('audio', audioInput.files[0]);
+
+            showSpinner('transcribe-spinner', transcribeButton);
+            try {
+                const response = await fetch('/transcribe', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                transcriptionText.textContent = data.transcription || data.error || 'No transcription received.';
+                transcriptionOutput.classList.remove('hidden');
+            } catch (error) {
+                transcriptionText.textContent = 'Error transcribing audio. Please try again.';
+                transcriptionOutput.classList.remove('hidden');
+            } finally {
+                hideSpinner('transcribe-spinner', transcribeButton);
+            }
+        });
     </script>
-    <!-- Whisper Transcription Form -->
-<h2>Transcribe Audio</h2>
-<form id="transcription-form" enctype="multipart/form-data">
-    <input type="file" name="audio" accept="audio/*" required>
-    <button type="submit">Transcribe</button>
-</form>
-<pre id="transcription-result" style="white-space: pre-wrap; margin-top: 1em;"></pre>
-
-<script>
-document.getElementById("transcription-form").addEventListener("submit", async function(event) {
-    event.preventDefault();
-    const form = event.target;
-    const formData = new FormData(form);
-
-    const response = await fetch("/transcribe", {
-        method: "POST",
-        body: formData
-    });
-
-    const result = await response.json();
-    document.getElementById("transcription-result").innerText = result.transcription || result.error;
-});
-</script>
 </body>
 </html>
