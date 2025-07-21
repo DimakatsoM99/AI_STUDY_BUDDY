@@ -1,5 +1,5 @@
 flask
 faster-whisper
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.0.0+cpu
+torch==2.7.1+cpu
 numpy
