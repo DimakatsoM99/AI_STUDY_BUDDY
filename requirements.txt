@@ -3,4 +3,4 @@ flask-cors
 python-dotenv
 cohere
 torch
-whisper
+git+https://github.com/openai/whisper.git
