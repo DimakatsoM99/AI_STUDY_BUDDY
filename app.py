@@ -4,8 +4,8 @@ import os
 
 app = Flask(__name__)
 
-# Load the model once at startup
-model = WhisperModel("base", compute_type="int8")  # Use "float16" if running on GPU
+# Use a lighter model to avoid memory issues on free Render
+model = WhisperModel("tiny", compute_type="int8")
 
 @app.route('/')
 def home():
@@ -27,11 +27,9 @@ def transcribe_audio():
 
     # Transcribe audio
     segments, info = model.transcribe(filepath)
-
-    # Collect the full text
     transcription = " ".join([segment.text for segment in segments])
 
-    # Clean up the file
+    # Clean up
     os.remove(filepath)
 
     return jsonify({
@@ -40,4 +38,5 @@ def transcribe_audio():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
